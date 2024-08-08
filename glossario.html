@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glossário</title>
+    <style>
+        /* Estilos CSS */
+        body {
+            font-family: Arial, sans-serif;
+        }
+        #glossary-container {
+            margin-top: 20px;
+        }
+        .term {
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+        }
+        .btn {
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            margin: 2px;
+            transition-duration: 0.4s;
+            border-radius: 4px;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+        /* Estilos para o modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Glossário</h1>
+    
+    <!-- Formulário para adicionar um novo termo -->
+    <form id="form">
+        <label for="term">Termo:</label>
+        <input type="text" id="term" required>
+        <label for="definition">Definição:</label>
+        <textarea id="definition" rows="4" required></textarea>
+        <button type="submit" class="btn">Adicionar</button>
+    </form>
+
+    <!-- Container para exibir os termos do glossário -->
+    <div id="glossary-container">
+        <h2>Glossário</h2>
+        <div id="glossary"></div>
+    </div>
+
+    <!-- Botões para salvar e carregar o glossário -->
+    <div>
+        <button id="saveBtn" class="btn">Salvar Glossário</button>
+        <button id="loadBtn" class="btn">Carregar Glossário</button>
+    </div>
+
+    <!-- Modal para edição de termos -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>Editar Termo</h2>
+            <label for="editTerm">Termo:</label>
+            <input type="text" id="editTerm" required>
+            <label for="editDefinition">Definição:</label>
+            <textarea id="editDefinition" rows="4" required></textarea>
+            <button id="updateBtn" class="btn">Atualizar</button>
+        </div>
+    </div>
+
+    <script>
+        // Variável para armazenar os termos do glossário
+        let glossary = [];
+
+        // Função para adicionar um termo ao glossário
+        function addTerm(term, definition) {
+            glossary.push({ term, definition });
+            renderGlossary();
+        }
+
+        // Função para exibir o glossário na página
+        function renderGlossary() {
+            const glossaryContainer = document.getElementById('glossary');
+            glossaryContainer.innerHTML = '';
+            glossary.forEach((term, index) => {
+                const termElement = document.createElement('div');
+                termElement.classList.add('term');
+                termElement.innerHTML = `
+                    <strong>${term.term}:</strong> ${term.definition}
+                    <button class="edit-btn" onclick="openModal(${index})">Editar</button>
+                    <button class="delete-btn" onclick="deleteTerm(${index})">Excluir</button>
+                `;
+                glossaryContainer.appendChild(termElement);
+            });
+        }
+
+        // Função para abrir o modal de edição
+        function openModal(index) {
+            const term = glossary[index].term;
+            const definition = glossary[index].definition;
+            document.getElementById('editTerm').value = term;
+            document.getElementById('editDefinition').value = definition;
+            // Mostrar o modal
+            const modal = document.getElementById('editModal');
+            modal.style.display = 'block';
+            // Atualizar o termo no glossário ao clicar em Atualizar
+            document.getElementById('updateBtn').onclick = function() {
+                const newTerm = document.getElementById('editTerm').value.trim();
+                const newDefinition = document.getElementById('editDefinition').value.trim();
+                if (newTerm !== '' && newDefinition !== '') {
+                    glossary[index].term = newTerm;
+                    glossary[index].definition = newDefinition;
+                    renderGlossary();
+                    closeModal();
+                } else {
+                    alert('Por favor, preencha ambos os campos.');
+                }
+            };
+        }
+
+        // Função para fechar o modal
+        function closeModal() {
+            const modal = document.getElementById('editModal');
+            modal.style.display = 'none';
+        }
+
+        // Função para excluir um termo do glossário
+        function deleteTerm(index) {
+            if (confirm('Tem certeza que deseja excluir este termo?')) {
+                glossary.splice(index, 1);
+                renderGlossary();
+            }
+        }
+
+        // Event listener para adicionar um termo quando o formulário for enviado
+        document.getElementById('form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const term = document.getElementById('term').value.trim();
+            const definition = document.getElementById('definition').value.trim();
+            if (term !== '' && definition !== '') {
+                addTerm(term, definition);
+                document.getElementById('term').value = '';
+                document.getElementById('definition').value = '';
+            } else {
+                alert('Por favor, preencha ambos os campos.');
+            }
+        });
+
+        // Event listener para salvar o glossário
+        document.getElementById('saveBtn').addEventListener('click', function() {
+            // Converter o glossário para JSON
+            const glossaryJSON = JSON.stringify(glossary);
+            // Criar um objeto Blob contendo o JSON
+            const blob = new Blob([glossaryJSON], { type: 'application/json'});
+			// Criar um link para fazer o download do arquivo
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = 'glossario.json';
+			document.body.appendChild(a);
+			a.click();
+			// Limpar o link da memória
+			setTimeout(() => {
+			URL.revokeObjectURL(url);
+			document.body.removeChild(a);
+			}, 0);
+		});
+		
+		// Event listener para carregar o glossário
+		document.getElementById('loadBtn').addEventListener('click', function() {
+			const input = document.createElement('input');
+			input.type = 'file';
+			input.accept = 'application/json';
+			input.onchange = function(event) {
+				const file = event.target.files[0];
+				const reader = new FileReader();
+				reader.onload = function() {
+					try {
+						// Ler o conteúdo do arquivo como JSON
+						const glossaryJSON = reader.result;
+						glossary = JSON.parse(glossaryJSON);
+						// Exibir o glossário na página
+						renderGlossary();
+					} catch (error) {
+						console.error('Erro ao carregar o glossário:', error);
+					}
+				};
+				reader.readAsText(file);
+			};
+			input.click();
+		});
+	</script>
+</body>
+</html>
